@@ -32,7 +32,7 @@ To run this application on your local machine, follow these steps:
 
 1.  **Clone the Repository:**
     ```bash
-    git clone [https://github.com/YourUsername/your-repo-name.git](https://github.com/YourUsername/your-repo-name.git)
+    git clone https://github.com/ganeshsivahub/PDFmerger.git
     cd your-repo-name
     ```
 
@@ -45,7 +45,7 @@ To run this application on your local machine, follow these steps:
 3.  **Run the App:**
     Start the Streamlit server:
     ```bash
-    streamlit run app.py
+    streamlit run PDFCombine2.0.py
     ```
     The application will open in your web browser at `http://localhost:8501`.
 
