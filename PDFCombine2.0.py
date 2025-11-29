@@ -28,6 +28,7 @@ def merge_pdfs(pdf_files_data, author_name, producer_name, output_page_size_name
     Returns:
         bytes: The merged PDF as bytes, or None if an error occurred.
     """
+    # Use PyPDF2's PdfWriter
     merger = PdfWriter()
 
     # 1. SET DOCUMENT PROPERTIES
@@ -40,7 +41,6 @@ def merge_pdfs(pdf_files_data, author_name, producer_name, output_page_size_name
     output_width, output_height = PAGE_SIZES.get(output_page_size_name, PAGE_SIZES["A4 (Default)"])
 
     # Set the default page size (page box) for the writer object
-    # This is crucial for handling pages of different sizes consistently.
     default_page_size = RectangleObject([0, 0, output_width, output_height])
 
     for pdf_data in pdf_files_data:
@@ -54,11 +54,10 @@ def merge_pdfs(pdf_files_data, author_name, producer_name, output_page_size_name
                 page = reader.pages[page_num]
 
                 # Apply the default size (CropBox/MediaBox) to the page
-                # This ensures all pages conform to the selected size,
-                # effectively scaling or cropping if they are of different sizes.
                 page.mediabox = default_page_size
                 page.cropbox = default_page_size
 
+                # NOTE: Use merger.add_page(page) for PyPDF2 v3.x and later
                 merger.add_page(page)
 
         except Exception as e:
@@ -69,7 +68,7 @@ def merge_pdfs(pdf_files_data, author_name, producer_name, output_page_size_name
     output_pdf_buffer = io.BytesIO()
     merger.write(output_pdf_buffer)
     merger.close()
-    output_pdf_buffer.seek(0)  # Reset buffer position to the beginning
+    output_pdf_buffer.seek(0)
     return output_pdf_buffer.getvalue()
 
 
@@ -103,25 +102,25 @@ if uploaded_files:
     existing_file_names = {info['name'] for info in st.session_state.uploaded_files_info}
     new_files_to_add = []
     for file in uploaded_files:
+        # Check if file has already been stored (by name is sufficient for this context)
         if file.name not in existing_file_names:
-            # Store the original file object or its value to retrieve later
+            # Store the original file object's data
             new_files_to_add.append({'name': file.name, 'data': file.getvalue()})
 
     if new_files_to_add:
         st.session_state.uploaded_files_info.extend(new_files_to_add)
-        st.rerun()  # Rerun to update the sortable list
+        # Rerun is necessary here to clear the file uploader widget and update the sortable list immediately
+        st.rerun()
 
 # --- Configuration Section ---
 st.subheader("Configuration")
 col_meta, col_size = st.columns(2)
 
-# PDF Metadata Inputs (Hardcoded as requested)
-AUTHOR = "Ganesh Sivaraman"
-PRODUCER = "Ganesh Sivaraman"
-
+# MODIFIED: Use st.text_input to allow user input for metadata
 with col_meta:
-    st.text_input("PDF Author", value=AUTHOR, disabled=True, help="Set as the PDF's Author property.")
-    st.text_input("PDF Producer", value=PRODUCER, disabled=True, help="Set as the PDF's Producer property.")
+    # Set default values for convenience
+    user_author = st.text_input("PDF Author", value="Ganesh Sivaraman", help="Sets the PDF's Author property.")
+    user_producer = st.text_input("PDF Producer", value="PDF Merger App", help="Sets the PDF's Producer property.")
 
 # Page Size Selection
 with col_size:
@@ -149,7 +148,7 @@ if st.session_state.uploaded_files_info:
     # Reconstruct the ordered list of file data based on the sorted file names
     reordered_files_data = [file_name_to_data[name] for name in sorted_file_names]
 
-    # Display the current order (optional, but helpful for user confirmation)
+    # Display the current order
     st.write("Current merge order:")
     for i, name in enumerate(sorted_file_names):
         st.write(f"{i + 1}. **{name}**")
@@ -164,10 +163,11 @@ if st.session_state.uploaded_files_info:
                 st.warning("Please upload at least two PDF files to merge.")
             else:
                 with st.spinner("Merging PDFs..."):
+                    # MODIFIED: Pass the user_author and user_producer variables
                     merged_pdf_bytes = merge_pdfs(
                         reordered_files_data,
-                        AUTHOR,
-                        PRODUCER,
+                        user_author,  # Passed user input
+                        user_producer,  # Passed user input
                         selected_page_size
                     )
 
@@ -185,7 +185,7 @@ if st.session_state.uploaded_files_info:
         if st.button("Clear All Files"):
             st.session_state.uploaded_files_info = []
             st.success("All files cleared.")
-            st.rerun()  # Rerun to clear the display
+            st.rerun()
 
 else:
     st.info("Upload PDF files to get started!")
